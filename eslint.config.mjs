@@ -3,6 +3,7 @@ import * as fs from "fs"
 // https://github.com/francoismassart/eslint-plugin-tailwindcss/pull/381
 // import eslintPluginTailwindcss from "eslint-plugin-tailwindcss"
 import eslintPluginImport from "eslint-plugin-import"
+import eslintPluginJsxA11y from "eslint-plugin-jsx-a11y"
 import eslintPluginNext from "@next/eslint-plugin-next"
 import eslintPluginStorybook from "eslint-plugin-storybook"
 import typescriptEslint from "typescript-eslint"
@@ -28,6 +29,14 @@ const config = typescriptEslint.config(
   // ...eslintPluginTailwindcss.configs["flat/recommended"],
   typescriptEslint.configs.recommended,
   eslintPluginImport.flatConfigs.recommended,
+  {
+    plugins: {
+      "jsx-a11y": eslintPluginJsxA11y,
+    },
+    rules: {
+      ...eslintPluginJsxA11y.configs.recommended.rules,
+    },
+  },
   {
     plugins: {
       "@next/next": eslintPluginNext,

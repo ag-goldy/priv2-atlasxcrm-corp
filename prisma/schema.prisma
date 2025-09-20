@@ -1,0 +1,171 @@
+// Prisma schema generated for AtlasX CRM
+// Documentation: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  SALES
+  SUPPORT
+  READONLY
+}
+
+enum DealType {
+  NEW_OPPORTUNITY
+  CONFIRMED
+  THIRD_QUOTE
+  UPCOMING
+}
+
+enum DealStatus {
+  NOT_STARTED
+  PENDING_TO_QUOTE
+  PENDING_VENDOR_QUOTE
+  WAITING_FOR_PO
+  WAITING_FOR_CONFIRMATION
+  IN_PRE_SALES_STAGE
+}
+
+enum CommPref {
+  WHATSAPP
+  TELEGRAM
+  EMAIL
+}
+
+enum ParticipantKind {
+  VENDOR
+  DISTRIBUTOR
+  SERVICE_PARTNER
+}
+
+enum FileLabel {
+  QUOTES @map("Quotes")
+  PURCHASE_ORDERS @map("Purchase Orders")
+  AGREEMENTS @map("Agreements")
+  SERVICE_REPORTS @map("Service Reports")
+  HANDOVER_REPORTS @map("Handover Reports")
+  DELIVERY_ORDERS @map("Delivery Orders")
+  INVOICES @map("Invoices")
+  CREDIT_NOTES @map("Credit Notes")
+  RECEIPTS @map("Receipts")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  upn       String   @unique
+  display   String
+  role      Role
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Company {
+  id                 String     @id @default(cuid())
+  name               String
+  companyId          String     @unique @db.VarChar(7)
+  address            String?
+  subAddress         String?
+  officeNumber       String?
+  spSiteId           String?
+  spSalesDriveId     String?
+  spProjectsDriveId  String?
+  spFinanceDriveId   String?
+  spBaseFolderName   String?
+  customers          Customer[]
+  deals              Deal[]
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+}
+
+model Customer {
+  id           String    @id @default(cuid())
+  companyId    String
+  clientName   String
+  mobileNumber String?
+  commPref     CommPref?
+  company      Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  deals        Deal[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([companyId])
+}
+
+model Deal {
+  id               String      @id @default(cuid())
+  companyId        String
+  customerId       String?
+  projectName      String
+  type             DealType
+  status           DealStatus
+  ownerUpn         String
+  estimatedSize    Decimal?    @db.Decimal(18, 2)
+  spSalesItemId    String?
+  spProjectsItemId String?
+  spFinanceItemId  String?
+  spWebUrl         String?
+  isLost           Boolean     @default(false)
+  isCompleted      Boolean     @default(false)
+  lostReason       String?
+  altOpportunity   String?
+  company          Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  customer         Customer?   @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  participants     Participant[]
+  files            FileLink[]
+  audits           Audit[]
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  @@index([companyId])
+  @@index([customerId])
+}
+
+model Audit {
+  id        String   @id @default(cuid())
+  dealId    String
+  action    String
+  actorUpn  String
+  payload   Json
+  createdAt DateTime @default(now())
+
+  deal Deal @relation(fields: [dealId], references: [id], onDelete: Cascade)
+
+  @@index([dealId])
+}
+
+model Participant {
+  id            String          @id @default(cuid())
+  dealId        String
+  kind          ParticipantKind
+  companyName   String
+  pocName       String?
+  pocContact    String?
+  pocEmail      String?
+  productBrand  String?
+  createdAt     DateTime        @default(now())
+  deal          Deal            @relation(fields: [dealId], references: [id], onDelete: Cascade)
+
+  @@index([dealId])
+}
+
+model FileLink {
+  id        String     @id @default(cuid())
+  dealId    String
+  label     FileLabel
+  driveId   String
+  itemId    String
+  webUrl    String
+  createdAt DateTime   @default(now())
+  deal      Deal       @relation(fields: [dealId], references: [id], onDelete: Cascade)
+
+  @@index([dealId])
+}

@@ -34,3 +34,5 @@ storybook-static/
 /playwright/.cache/
 
 /.npm-only-allow
+/generated/prisma
+.vercel

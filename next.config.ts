@@ -10,6 +10,7 @@ const config: NextConfig = {
       fullUrl: true,
     },
   },
+  serverExternalPackages: ["@prisma/client", "bcrypt"],
   rewrites: async () => [
     { source: "/healthz", destination: "/api/health" },
     { source: "/api/healthz", destination: "/api/health" },

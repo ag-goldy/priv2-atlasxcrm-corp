@@ -1,66 +1,69 @@
-import { Metadata } from "next"
-import { Button } from "components/Button/Button"
+"use client"
 
-import { LP_GRID_ITEMS } from "lp-items"
+import type { AuthenticationResult } from "@azure/msal-browser"
+import { useMsal } from "@azure/msal-react"
+import { useCallback, useEffect, useState } from "react"
 
-export const metadata: Metadata = {
-  title: "Next.js Enterprise Boilerplate",
-  twitter: {
-    card: "summary_large_image",
-  },
-  openGraph: {
-    url: "https://next-enterprise.vercel.app/",
-    images: [
-      {
-        width: 1200,
-        height: 630,
-        url: "https://raw.githubusercontent.com/Blazity/next-enterprise/main/.github/assets/project-logo.png",
-      },
-    ],
-  },
-}
+const LOGIN_SCOPES = ["User.Read", "Sites.ReadWrite.All", "Files.ReadWrite.All", "offline_access"]
 
-export default function Web() {
+export default function HomePage() {
+  const { instance, accounts } = useMsal()
+  const [isSigningIn, setIsSigningIn] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [upn, setUpn] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (accounts.length > 0) {
+      setUpn(accounts[0]?.username ?? null)
+    }
+  }, [accounts])
+
+  const handleSignIn = useCallback(async () => {
+    setIsSigningIn(true)
+    setError(null)
+
+    try {
+      const result: AuthenticationResult = await instance.loginPopup({ scopes: LOGIN_SCOPES })
+      if (result.account) {
+        instance.setActiveAccount(result.account)
+        setUpn(result.account.username ?? null)
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to sign in"
+      setError(message)
+    } finally {
+      setIsSigningIn(false)
+    }
+  }, [instance])
+
   return (
-    <>
-      <section className="bg-white dark:bg-gray-900">
-        <div className="mx-auto grid max-w-(--breakpoint-xl) px-4 py-8 text-center lg:py-16">
-          <div className="mx-auto place-self-center">
-            <h1 className="mb-4 max-w-2xl text-4xl leading-none font-extrabold tracking-tight md:text-5xl xl:text-6xl dark:text-white">
-              Next.js Enterprise Boilerplate
-            </h1>
-            <p className="mb-6 max-w-2xl font-light text-gray-500 md:text-lg lg:mb-8 lg:text-xl dark:text-gray-400">
-              Jumpstart your enterprise project with our feature-packed, high-performance Next.js boilerplate!
-              Experience rapid UI development, AI-powered code reviews, and an extensive suite of tools for a smooth and
-              enjoyable development process.
-            </p>
-            <Button href="https://github.com/Blazity/next-enterprise" className="mr-3">
-              Get started
-            </Button>
-            <Button
-              href="https://vercel.com/new/git/external?repository-url=https://github.com/Blazity/next-enterprise"
-              intent="secondary"
-            >
-              Deploy Now
-            </Button>
+    <main className="flex min-h-screen flex-col items-center justify-center bg-slate-950 px-4 text-center text-white">
+      <div className="w-full max-w-md space-y-6 rounded-3xl bg-slate-900/60 p-8 shadow-xl backdrop-blur">
+        <h1 className="text-3xl font-semibold">Welcome</h1>
+        <p className="text-sm text-slate-300">Sign in with your Microsoft work or school account to continue.</p>
+
+        <button
+          type="button"
+          onClick={handleSignIn}
+          disabled={isSigningIn}
+          className="inline-flex w-full items-center justify-center rounded-xl bg-blue-500 px-4 py-3 text-sm font-medium text-white transition hover:bg-blue-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400 disabled:cursor-not-allowed disabled:bg-blue-500/70"
+        >
+          {isSigningIn ? "Signing in…" : "Sign in with Microsoft"}
+        </button>
+
+        {upn && (
+          <div className="rounded-xl border border-slate-700 bg-slate-900/80 p-4 text-sm">
+            <p className="font-semibold text-slate-200">Signed in as</p>
+            <p className="mt-1 break-words text-slate-100">{upn}</p>
           </div>
-        </div>
-      </section>
-      <section className="bg-white dark:bg-gray-900">
-        <div className="mx-auto max-w-(--breakpoint-xl) px-4 py-8 sm:py-16 lg:px-6">
-          <div className="justify-center space-y-8 md:grid md:grid-cols-2 md:gap-12 md:space-y-0 lg:grid-cols-3">
-            {LP_GRID_ITEMS.map((singleItem) => (
-              <div key={singleItem.title} className="flex flex-col items-center justify-center text-center">
-                <div className="bg-primary-100 dark:bg-primary-900 mb-4 flex size-10 items-center justify-center rounded-full p-1.5 text-blue-700 lg:size-12">
-                  {singleItem.icon}
-                </div>
-                <h3 className="mb-2 text-xl font-bold dark:text-white">{singleItem.title}</h3>
-                <p className="text-gray-500 dark:text-gray-400">{singleItem.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-    </>
+        )}
+
+        {error && (
+          <p className="text-sm text-red-400" role="alert">
+            {error}
+          </p>
+        )}
+      </div>
+    </main>
   )
 }
