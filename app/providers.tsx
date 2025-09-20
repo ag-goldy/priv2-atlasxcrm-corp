@@ -1,10 +1,10 @@
 "use client"
 
-import { PublicClientApplication } from "@azure/msal-browser"
 import type { Configuration } from "@azure/msal-browser"
+import { PublicClientApplication } from "@azure/msal-browser"
 import { MsalProvider } from "@azure/msal-react"
 import type { ReactNode } from "react"
-import { useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
 
 import { env } from "../env.mjs"
 
@@ -44,6 +44,31 @@ export function Providers({ children }: ProvidersProps) {
 
     return new PublicClientApplication(authConfig)
   }, [])
+
+  const [isReady, setIsReady] = useState(false)
+
+  useEffect(() => {
+    let mounted = true
+
+    msalInstance
+      .initialize()
+      .catch((error) => {
+        console.error("MSAL initialization failed", error)
+      })
+      .finally(() => {
+        if (mounted) {
+          setIsReady(true)
+        }
+      })
+
+    return () => {
+      mounted = false
+    }
+  }, [msalInstance])
+
+  if (!isReady) {
+    return null
+  }
 
   return <MsalProvider instance={msalInstance}>{children}</MsalProvider>
 }
